@@ -14,7 +14,13 @@ const (
 	Transient SimpleQueueType = "transient"
 )
 
-func DeclareAndBind(conn *amqp.Connection, exchange, queueName, key string, queueType SimpleQueueType) (*amqp.Channel, amqp.Queue, error) {
+func DeclareAndBind(
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+) (*amqp.Channel, amqp.Queue, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		return nil, amqp.Queue{}, fmt.Errorf("Could not create channel: %v", err)

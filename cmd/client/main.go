@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -40,6 +41,24 @@ func main() {
 		log.Fatalf("Couldn't subscribe to pause: %v", err)
 	}
 
+	err = pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilTopic,
+		routing.ArmyMovesPrefix+"."+gs.GetUsername(),
+		routing.ArmyMovesPrefix+".*",
+		pubsub.Transient,
+		HandlerMove(gs),
+	)
+	if err != nil {
+		log.Fatalf("Couldn't subscribe to armymove: %v", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Couldn't create channel: %v", err)
+	}
+	defer ch.Close()
+
 	for {
 		inputs := gamelogic.GetInput()
 		if len(inputs) == 0 {
@@ -54,6 +73,15 @@ func main() {
 			}
 		case "move":
 			_, err = gs.CommandMove(inputs)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			err = pubsub.PublishJSON(ch, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+".*", routing.GameLog{
+				CurrentTime: time.Now(),
+				Message:     fmt.Sprintf("User %s made a move!", gs.GetUsername()),
+				Username:    gs.GetUsername(),
+			})
 			if err != nil {
 				fmt.Println(err)
 				continue
