@@ -26,15 +26,19 @@ func main() {
 		log.Fatalf("Could not get username: %v", err)
 	}
 
-	queueName := routing.PauseKey + "." + userName
+	gs := gamelogic.NewGameState(userName)
 
-	_, queue, err := pubsub.DeclareAndBind(conn, "peril_direct", queueName, routing.PauseKey, pubsub.Transient)
+	err = pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilDirect,
+		routing.PauseKey+"."+gs.GetUsername(),
+		routing.PauseKey,
+		pubsub.Transient,
+		handlerPause(gs),
+	)
 	if err != nil {
-		log.Fatalf("Could not subscribe to pause queue: %v", err)
+		log.Fatalf("Couldn't subscribe to pause: %v", err)
 	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
-
-	gameState := gamelogic.NewGameState(userName)
 
 	for {
 		inputs := gamelogic.GetInput()
@@ -43,19 +47,19 @@ func main() {
 		}
 		switch inputs[0] {
 		case "spawn":
-			err = gameState.CommandSpawn(inputs)
+			err = gs.CommandSpawn(inputs)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 		case "move":
-			_, err = gameState.CommandMove(inputs)
+			_, err = gs.CommandMove(inputs)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 		case "status":
-			gameState.CommandStatus()
+			gs.CommandStatus()
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
