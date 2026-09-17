@@ -65,7 +65,7 @@ func SubscribeJSON[T any](
 		defer ch.Close()
 		for del := range delChan {
 			var output T
-			json.Unmarshal(del.Body, output)
+			json.Unmarshal(del.Body, &output)
 			handler(output)
 			del.Ack(false)
 		}
