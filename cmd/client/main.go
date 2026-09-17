@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -72,16 +71,16 @@ func main() {
 				continue
 			}
 		case "move":
-			_, err = gs.CommandMove(inputs)
+			mv, err := gs.CommandMove(inputs)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			err = pubsub.PublishJSON(ch, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+".*", routing.GameLog{
-				CurrentTime: time.Now(),
-				Message:     fmt.Sprintf("User %s made a move!", gs.GetUsername()),
-				Username:    gs.GetUsername(),
-			})
+			err = pubsub.PublishJSON(ch,
+				routing.ExchangePerilTopic,
+				routing.ArmyMovesPrefix+".*",
+				mv,
+			)
 			if err != nil {
 				fmt.Println(err)
 				continue
