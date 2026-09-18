@@ -27,6 +27,11 @@ func main() {
 	}
 
 	gs := gamelogic.NewGameState(userName)
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Couldn't create channel: %v", err)
+	}
+	defer ch.Close()
 
 	err = pubsub.SubscribeJSON(
 		conn,
@@ -34,7 +39,7 @@ func main() {
 		routing.PauseKey+"."+gs.GetUsername(),
 		routing.PauseKey,
 		pubsub.Transient,
-		handlerPause(gs),
+		HandlerPause(gs),
 	)
 	if err != nil {
 		log.Fatalf("Couldn't subscribe to pause: %v", err)
@@ -46,17 +51,23 @@ func main() {
 		routing.ArmyMovesPrefix+"."+gs.GetUsername(),
 		routing.ArmyMovesPrefix+".*",
 		pubsub.Transient,
-		HandlerMove(gs),
+		HandlerMove(gs, ch),
 	)
 	if err != nil {
 		log.Fatalf("Couldn't subscribe to armymove: %v", err)
 	}
 
-	ch, err := conn.Channel()
+	err = pubsub.SubscribeJSON(
+		conn,
+		routing.ExchangePerilTopic,
+		routing.WarRecognitionsPrefix,
+		routing.WarRecognitionsPrefix+"."+gs.GetUsername(),
+		pubsub.Durable,
+		HandlerWar(gs, ch),
+	)
 	if err != nil {
-		log.Fatalf("Couldn't create channel: %v", err)
+		log.Fatalf("Couldn't subscribe to war: %v", err)
 	}
-	defer ch.Close()
 
 	for {
 		inputs := gamelogic.GetInput()
