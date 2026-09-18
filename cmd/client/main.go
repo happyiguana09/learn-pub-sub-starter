@@ -33,37 +33,40 @@ func main() {
 	}
 	defer ch.Close()
 
-	err = pubsub.SubscribeJSON(
+	err = pubsub.Subscribe(
 		conn,
 		routing.ExchangePerilDirect,
 		routing.PauseKey+"."+gs.GetUsername(),
 		routing.PauseKey,
 		pubsub.Transient,
 		HandlerPause(gs),
+		pubsub.UnmarshalJSON[routing.PlayingState],
 	)
 	if err != nil {
 		log.Fatalf("Couldn't subscribe to pause: %v", err)
 	}
 
-	err = pubsub.SubscribeJSON(
+	err = pubsub.Subscribe(
 		conn,
 		routing.ExchangePerilTopic,
 		routing.ArmyMovesPrefix+"."+gs.GetUsername(),
 		routing.ArmyMovesPrefix+".*",
 		pubsub.Transient,
 		HandlerMove(gs, ch),
+		pubsub.UnmarshalJSON[gamelogic.ArmyMove],
 	)
 	if err != nil {
 		log.Fatalf("Couldn't subscribe to armymove: %v", err)
 	}
 
-	err = pubsub.SubscribeJSON(
+	err = pubsub.Subscribe(
 		conn,
 		routing.ExchangePerilTopic,
 		routing.WarRecognitionsPrefix,
 		routing.WarRecognitionsPrefix+"."+gs.GetUsername(),
 		pubsub.Durable,
 		HandlerWar(gs, ch),
+		pubsub.UnmarshalJSON[gamelogic.RecognitionOfWar],
 	)
 	if err != nil {
 		log.Fatalf("Couldn't subscribe to war: %v", err)
