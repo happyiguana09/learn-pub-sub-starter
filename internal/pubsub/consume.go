@@ -44,6 +44,7 @@ func Subscribe[T any](
 		return err
 	}
 
+	ch.Qos(10, 0, false)
 	msgChan, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
